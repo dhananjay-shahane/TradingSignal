@@ -14,6 +14,7 @@ import TradingSignals from "@/pages/TradingSignals";
 import UserManagement from "@/pages/UserManagement";
 import HistoricalData from "@/pages/HistoricalData";
 import FeatureTogglesPage from "@/pages/FeatureTogglesPage";
+import UserProfile from "@/pages/UserProfile";
 
 function AuthLayout({ children }: { children: React.ReactNode }) {
   const style = {
@@ -73,6 +74,12 @@ function Router() {
       <Route path="/features">
         <AuthLayout>
           <FeatureTogglesPage />
+        </AuthLayout>
+      </Route>
+
+      <Route path="/profile">
+        <AuthLayout>
+          <UserProfile />
         </AuthLayout>
       </Route>
 

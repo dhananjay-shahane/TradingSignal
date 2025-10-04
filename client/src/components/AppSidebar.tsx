@@ -1,4 +1,4 @@
-import { LayoutDashboard, TrendingUp, Users, Database, Settings, LogOut } from "lucide-react";
+import { LayoutDashboard, TrendingUp, Users, Database, Settings, LogOut, UserCircle } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import {
   Sidebar,
@@ -19,13 +19,15 @@ const menuItems = [
   { title: "User Management", url: "/users", icon: Users },
   { title: "Historical Data", url: "/history", icon: Database },
   { title: "Feature Toggles", url: "/features", icon: Settings },
+  { title: "Profile", url: "/profile", icon: UserCircle },
 ];
 
 export function AppSidebar() {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
 
   const handleLogout = () => {
     console.log("Logout triggered");
+    setLocation("/");
   };
 
   return (
