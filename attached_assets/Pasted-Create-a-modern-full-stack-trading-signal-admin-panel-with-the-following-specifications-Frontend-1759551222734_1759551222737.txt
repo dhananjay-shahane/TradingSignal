@@ -1,0 +1,73 @@
+Create a modern full-stack trading signal admin panel with the following specifications:
+
+Frontend:
+
+Use Next.js (latest version) framework.
+
+Use shadcn/ui and Tailwind CSS for a highly customizable, accessible, and modern UI design.
+
+Implement core pages: Dashboard, Trading Signals, Manage Users, Historical Data, and Feature Toggles (enable/disable sections).
+
+Use advanced React table components with sorting, filtering, pagination, real-time updates, and CSV export features.
+
+Include interactive trading charts using Recharts or Plotly.js.
+
+Implement real-time data fetching and synchronization with React Query or SWR and WebSocket or SSE support.
+
+Integrate role-based access control and JWT or OAuth2 authentication for security.
+
+Backend:
+
+Use Flask or FastAPI for building RESTful HTTP and WebSocket/SSE APIs.
+
+Use SQLAlchemy ORM with PostgreSQL for robust, scalable database management.
+
+Provide APIs for user management, CRUD operations on trading signals, historical data access.
+
+Implement WebSocket(SSE) endpoints for pushing live trading signals and updates.
+
+Secure APIs with JWT/OAuth2, validate inputs rigorously, and maintain detailed logs and audit records.
+
+File Structure Recommendation (Monorepo style without Docker):
+
+text
+/root
+│
+├── /frontend
+│   ├── /app                      # Next.js app directory (pages or app router)
+│   ├── /components               # Reusable UI components
+│   ├── /features                 # Feature-based modules (e.g., tradingSignal, userManagement)
+│   ├── /styles                   # Global & utility styles (Tailwind config here)
+│   ├── /hooks                    # Shared React hooks like data fetching logic
+│   ├── /services                 # Clients for API calls (REST/WebSocket wrappers)
+│   ├── /public                   # Static assets (images, fonts)
+│   ├── next.config.js            # Next.js configuration
+│   ├── package.json              # Frontend dependencies
+│   └── tsconfig.json             # TypeScript config if used
+│
+├── /backend
+│   ├── /app                      # Flask/FastAPI application code
+│   │   ├── /api                  # API route definitions and controllers
+│   │   ├── /models               # SQLAlchemy models
+│   │   ├── /schemas              # Pydantic schemas or serializers
+│   │   ├── /services             # Business logic, signal processing
+│   │   ├── /websockets           # WebSocket or SSE endpoint handlers
+│   │   ├── /auth                 # Authentication and authorization logic
+│   │   └── main.py               # Application entry point
+│   ├── requirements.txt          # Python dependencies
+│   └── config.py                 # App configuration and environment variables
+│
+├── .gitignore                    # Ignored files for source control
+├── README.md                     # Project overview and setup instructions
+└── LICENSE                      # License file (if needed)
+Development & Deployment Guidance:
+
+Use environment variables for storing secrets and config parameters.
+
+Implement unit and integration tests for both frontend and backend using Jest and Pytest respectively.
+
+Provide clear README instructions for installation, setup, running dev servers, and API usage.
+
+Keep the frontend and backend loosely coupled with well-defined API contracts.
+
+This structured, modern approach ensures maintainability, scalability, and clarity without Docker, making local development and next-phase deployment straightforward. It balances real-time functionality, data handling, security, and a modern UI perfectly suited for trading signal admin panels.
