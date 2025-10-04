@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -20,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Mail, ArrowUpDown, Search } from "lucide-react";
+import { Mail, ArrowUpDown, Search, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface User {
@@ -36,9 +35,9 @@ interface User {
 
 const initialUsers: User[] = [
   {
-    id: "1",
+    id: "USR001",
     email: "admin@tradingsignals.com",
-    password: "••••••••",
+    password: "Admin@123",
     role: "admin",
     status: "active",
     emailNotifications: true,
@@ -46,9 +45,9 @@ const initialUsers: User[] = [
     registeredAt: "2024-12-01T10:00:00Z",
   },
   {
-    id: "2",
+    id: "USR002",
     email: "trader1@example.com",
-    password: "••••••••",
+    password: "Trader1Pass",
     role: "user",
     status: "active",
     emailNotifications: true,
@@ -56,9 +55,9 @@ const initialUsers: User[] = [
     registeredAt: "2025-01-02T14:30:00Z",
   },
   {
-    id: "3",
+    id: "USR003",
     email: "trader2@example.com",
-    password: "••••••••",
+    password: "Secure2024",
     role: "user",
     status: "inactive",
     emailNotifications: false,
@@ -66,9 +65,9 @@ const initialUsers: User[] = [
     registeredAt: "2025-01-01T09:15:00Z",
   },
   {
-    id: "4",
+    id: "USR004",
     email: "trader3@example.com",
-    password: "••••••••",
+    password: "MyPass123",
     role: "user",
     status: "active",
     emailNotifications: true,
@@ -76,9 +75,9 @@ const initialUsers: User[] = [
     registeredAt: "2024-12-28T11:45:00Z",
   },
   {
-    id: "5",
+    id: "USR005",
     email: "trader4@example.com",
-    password: "••••••••",
+    password: "Test@Pass",
     role: "user",
     status: "active",
     emailNotifications: false,
@@ -87,7 +86,7 @@ const initialUsers: User[] = [
   },
 ];
 
-type SortField = "email" | "role" | "status" | "registeredAt";
+type SortField = "id" | "email" | "role" | "status" | "registeredAt";
 
 export default function UserManagement() {
   const { toast } = useToast();
@@ -97,6 +96,7 @@ export default function UserManagement() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortField, setSortField] = useState<SortField>("registeredAt");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const [visiblePasswords, setVisiblePasswords] = useState<Set<string>>(new Set());
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -105,6 +105,18 @@ export default function UserManagement() {
       setSortField(field);
       setSortDirection("asc");
     }
+  };
+
+  const togglePasswordVisibility = (userId: string) => {
+    setVisiblePasswords(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(userId)) {
+        newSet.delete(userId);
+      } else {
+        newSet.add(userId);
+      }
+      return newSet;
+    });
   };
 
   const handleSendPasswordReset = (user: User) => {
@@ -131,7 +143,9 @@ export default function UserManagement() {
 
   const filteredUsers = users
     .filter((user) => {
-      const matchesSearch = user.email.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = 
+        user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.id.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesRole = roleFilter === "all" || user.role === roleFilter;
       const matchesStatus = statusFilter === "all" || user.status === statusFilter;
       return matchesSearch && matchesRole && matchesStatus;
@@ -152,9 +166,9 @@ export default function UserManagement() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">User Management</h1>
+        <h1 className="text-xl md:text-2xl font-semibold tracking-tight">User Management</h1>
         <p className="text-sm text-muted-foreground">
           Manage users, permissions, and notification settings
         </p>
@@ -166,7 +180,7 @@ export default function UserManagement() {
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search by email..."
+                placeholder="Search by ID or email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-9"
@@ -197,11 +211,22 @@ export default function UserManagement() {
         </CardContent>
       </Card>
 
-      <div className="border rounded-lg">
+      <div className="border rounded-lg overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>
+              <TableHead className="whitespace-nowrap">
+                <Button
+                  variant="ghost"
+                  onClick={() => handleSort("id")}
+                  className="h-8 px-2"
+                  data-testid="sort-id"
+                >
+                  User ID
+                  <ArrowUpDown className="ml-2 h-3 w-3" />
+                </Button>
+              </TableHead>
+              <TableHead className="whitespace-nowrap">
                 <Button
                   variant="ghost"
                   onClick={() => handleSort("email")}
@@ -212,8 +237,8 @@ export default function UserManagement() {
                   <ArrowUpDown className="ml-2 h-3 w-3" />
                 </Button>
               </TableHead>
-              <TableHead>Password</TableHead>
-              <TableHead>
+              <TableHead className="whitespace-nowrap">Password</TableHead>
+              <TableHead className="whitespace-nowrap">
                 <Button
                   variant="ghost"
                   onClick={() => handleSort("role")}
@@ -224,7 +249,7 @@ export default function UserManagement() {
                   <ArrowUpDown className="ml-2 h-3 w-3" />
                 </Button>
               </TableHead>
-              <TableHead>
+              <TableHead className="whitespace-nowrap">
                 <Button
                   variant="ghost"
                   onClick={() => handleSort("status")}
@@ -235,9 +260,9 @@ export default function UserManagement() {
                   <ArrowUpDown className="ml-2 h-3 w-3" />
                 </Button>
               </TableHead>
-              <TableHead>Email Notifications</TableHead>
-              <TableHead>Schedule Time</TableHead>
-              <TableHead>
+              <TableHead className="whitespace-nowrap">Email Notifications</TableHead>
+              <TableHead className="whitespace-nowrap">Schedule Time</TableHead>
+              <TableHead className="whitespace-nowrap">
                 <Button
                   variant="ghost"
                   onClick={() => handleSort("registeredAt")}
@@ -248,21 +273,41 @@ export default function UserManagement() {
                   <ArrowUpDown className="ml-2 h-3 w-3" />
                 </Button>
               </TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredUsers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center text-muted-foreground">
+                <TableCell colSpan={9} className="text-center text-muted-foreground">
                   No users found
                 </TableCell>
               </TableRow>
             ) : (
               filteredUsers.map((user) => (
                 <TableRow key={user.id} data-testid={`row-user-${user.id}`}>
+                  <TableCell className="font-medium font-mono text-sm">{user.id}</TableCell>
                   <TableCell className="font-medium">{user.email}</TableCell>
-                  <TableCell className="font-mono text-sm">{user.password}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-sm">
+                        {visiblePasswords.has(user.id) ? user.password : "••••••••"}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={() => togglePasswordVisibility(user.id)}
+                        data-testid={`button-toggle-password-${user.id}`}
+                      >
+                        {visiblePasswords.has(user.id) ? (
+                          <EyeOff className="h-3 w-3" />
+                        ) : (
+                          <Eye className="h-3 w-3" />
+                        )}
+                      </Button>
+                    </div>
+                  </TableCell>
                   <TableCell>
                     <Badge className={getRoleBadgeColor(user.role)}>
                       {user.role}
@@ -285,11 +330,11 @@ export default function UserManagement() {
                       type="time"
                       value={user.scheduleEmailTime}
                       onChange={(e) => handleUpdateScheduleTime(user.id, e.target.value)}
-                      className="w-32"
+                      className="w-28 md:w-32"
                       data-testid={`input-schedule-${user.id}`}
                     />
                   </TableCell>
-                  <TableCell className="font-mono text-sm text-muted-foreground">
+                  <TableCell className="font-mono text-sm text-muted-foreground whitespace-nowrap">
                     {new Date(user.registeredAt).toLocaleDateString()}
                   </TableCell>
                   <TableCell className="text-right">
@@ -298,9 +343,10 @@ export default function UserManagement() {
                       size="sm"
                       onClick={() => handleSendPasswordReset(user)}
                       data-testid={`button-reset-password-${user.id}`}
+                      className="whitespace-nowrap"
                     >
-                      <Mail className="h-4 w-4 mr-2" />
-                      Send Reset Link
+                      <Mail className="h-4 w-4 md:mr-2" />
+                      <span className="hidden md:inline">Send Reset Link</span>
                     </Button>
                   </TableCell>
                 </TableRow>

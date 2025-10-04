@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import { UserProfileMenu } from "@/components/UserProfileMenu";
 
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
@@ -25,12 +26,15 @@ function AuthLayout({ children }: { children: React.ReactNode }) {
     <SidebarProvider style={style as React.CSSProperties}>
       <div className="flex h-screen w-full">
         <AppSidebar />
-        <div className="flex flex-col flex-1">
-          <header className="flex items-center justify-between p-4 border-b">
-            <SidebarTrigger data-testid="button-sidebar-toggle" />
+        <div className="flex flex-col flex-1 min-w-0">
+          <header className="flex items-center justify-between p-3 md:p-4 border-b shrink-0">
+            <div className="flex items-center gap-2">
+              <SidebarTrigger data-testid="button-sidebar-toggle" />
+              <UserProfileMenu />
+            </div>
           </header>
           <main className="flex-1 overflow-auto">
-            <div className="max-w-7xl mx-auto p-6">
+            <div className="max-w-7xl mx-auto p-4 md:p-6">
               {children}
             </div>
           </main>
