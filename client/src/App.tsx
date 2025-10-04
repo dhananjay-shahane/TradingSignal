@@ -6,6 +6,10 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { UserProfileMenu } from "@/components/UserProfileMenu";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { Button } from "@/components/ui/button";
+import { Settings } from "lucide-react";
+import { useLocation } from "wouter";
 
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
@@ -16,8 +20,10 @@ import UserManagement from "@/pages/UserManagement";
 import HistoricalData from "@/pages/HistoricalData";
 import FeatureTogglesPage from "@/pages/FeatureTogglesPage";
 import UserProfile from "@/pages/UserProfile";
+import SettingsPage from "@/pages/SettingsPage";
 
 function AuthLayout({ children }: { children: React.ReactNode }) {
+  const [, setLocation] = useLocation();
   const style = {
     "--sidebar-width": "16rem",
   };
@@ -28,8 +34,17 @@ function AuthLayout({ children }: { children: React.ReactNode }) {
         <AppSidebar />
         <div className="flex flex-col flex-1 min-w-0">
           <header className="flex items-center justify-between p-3 md:p-4 border-b shrink-0">
+            <SidebarTrigger data-testid="button-sidebar-toggle" />
             <div className="flex items-center gap-2">
-              <SidebarTrigger data-testid="button-sidebar-toggle" />
+              <ThemeToggle />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setLocation("/settings")}
+                data-testid="button-settings"
+              >
+                <Settings className="h-5 w-5" />
+              </Button>
               <UserProfileMenu />
             </div>
           </header>
@@ -84,6 +99,12 @@ function Router() {
       <Route path="/profile">
         <AuthLayout>
           <UserProfile />
+        </AuthLayout>
+      </Route>
+
+      <Route path="/settings">
+        <AuthLayout>
+          <SettingsPage />
         </AuthLayout>
       </Route>
 

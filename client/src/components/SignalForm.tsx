@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -21,6 +21,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const signalFormSchema = z.object({
   symbol: z.string().min(1, "Symbol is required"),
@@ -35,8 +44,43 @@ interface SignalFormProps {
   onSubmit: (data: any) => void;
 }
 
+interface SymbolSuggestion {
+  symbol: string;
+  company: string;
+  sector: string;
+  subSector: string;
+  category: "Nifty" | "Nifty 500" | "ETF";
+}
+
+const mockSymbols: SymbolSuggestion[] = [
+  { symbol: "RELIANCE", company: "Reliance Industries", sector: "Energy", subSector: "Oil & Gas", category: "Nifty" },
+  { symbol: "TCS", company: "Tata Consultancy Services", sector: "IT", subSector: "Software", category: "Nifty" },
+  { symbol: "HDFCBANK", company: "HDFC Bank", sector: "Financial", subSector: "Banking", category: "Nifty" },
+  { symbol: "INFY", company: "Infosys", sector: "IT", subSector: "Software", category: "Nifty" },
+  { symbol: "ICICIBANK", company: "ICICI Bank", sector: "Financial", subSector: "Banking", category: "Nifty" },
+  { symbol: "HINDUNILVR", company: "Hindustan Unilever", sector: "FMCG", subSector: "Consumer Goods", category: "Nifty" },
+  { symbol: "ITC", company: "ITC Limited", sector: "FMCG", subSector: "Tobacco", category: "Nifty" },
+  { symbol: "SBIN", company: "State Bank of India", sector: "Financial", subSector: "Banking", category: "Nifty" },
+  { symbol: "BHARTIARTL", company: "Bharti Airtel", sector: "Telecom", subSector: "Telecom Services", category: "Nifty" },
+  { symbol: "KOTAKBANK", company: "Kotak Mahindra Bank", sector: "Financial", subSector: "Banking", category: "Nifty" },
+  { symbol: "ASIANPAINT", company: "Asian Paints", sector: "Consumer", subSector: "Paints", category: "Nifty 500" },
+  { symbol: "MARUTI", company: "Maruti Suzuki", sector: "Auto", subSector: "Automobile", category: "Nifty 500" },
+  { symbol: "TITAN", company: "Titan Company", sector: "Consumer", subSector: "Jewelry", category: "Nifty 500" },
+  { symbol: "SUNPHARMA", company: "Sun Pharmaceutical", sector: "Healthcare", subSector: "Pharma", category: "Nifty 500" },
+  { symbol: "NESTLEIND", company: "Nestle India", sector: "FMCG", subSector: "Food Products", category: "Nifty 500" },
+  { symbol: "NIFTYBEES", company: "Nippon India ETF Nifty BeES", sector: "ETF", subSector: "Index ETF", category: "ETF" },
+  { symbol: "JUNIORBEES", company: "Nippon India ETF Junior BeES", sector: "ETF", subSector: "Index ETF", category: "ETF" },
+  { symbol: "GOLDBEES", company: "Nippon India ETF Gold BeES", sector: "ETF", subSector: "Commodity ETF", category: "ETF" },
+  { symbol: "BANKBEES", company: "Nippon India ETF Bank BeES", sector: "ETF", subSector: "Sector ETF", category: "ETF" },
+];
+
 export function SignalForm({ open, onOpenChange, onSubmit }: SignalFormProps) {
   const [isAmountMode, setIsAmountMode] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [filterType, setFilterType] = useState<string>("company");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filteredSuggestions, setFilteredSuggestions] = useState<SymbolSuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   const form = useForm<z.infer<typeof signalFormSchema>>({
     resolver: zodResolver(signalFormSchema),
@@ -47,6 +91,35 @@ export function SignalForm({ open, onOpenChange, onSubmit }: SignalFormProps) {
       amount: "",
     },
   });
+
+  useEffect(() => {
+    if (searchTerm.length === 0) {
+      setFilteredSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    let filtered = mockSymbols;
+
+    if (selectedCategory !== "all") {
+      filtered = filtered.filter(s => s.category === selectedCategory);
+    }
+
+    const lowerSearch = searchTerm.toLowerCase();
+    filtered = filtered.filter(s => {
+      if (filterType === "company") {
+        return s.company.toLowerCase().includes(lowerSearch) || 
+               s.symbol.toLowerCase().includes(lowerSearch);
+      } else if (filterType === "sector") {
+        return s.sector.toLowerCase().includes(lowerSearch);
+      } else {
+        return s.subSector.toLowerCase().includes(lowerSearch);
+      }
+    });
+
+    setFilteredSuggestions(filtered.slice(0, 8));
+    setShowSuggestions(filtered.length > 0);
+  }, [searchTerm, selectedCategory, filterType]);
 
   const calculateQty = (amount: string, entryPrice: string) => {
     const amountNum = parseFloat(amount);
@@ -84,41 +157,125 @@ export function SignalForm({ open, onOpenChange, onSubmit }: SignalFormProps) {
     }
   };
 
+  const handleSelectSymbol = (symbol: SymbolSuggestion) => {
+    form.setValue("symbol", symbol.symbol);
+    setSearchTerm(symbol.symbol);
+    setShowSuggestions(false);
+  };
+
   const handleSubmit = (data: z.infer<typeof signalFormSchema>) => {
     console.log("Signal submitted:", data);
     onSubmit(data);
     form.reset();
+    setSearchTerm("");
+    setSelectedCategory("all");
+    setFilterType("company");
     onOpenChange(false);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]" data-testid="dialog-signal-form">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto" data-testid="dialog-signal-form">
         <DialogHeader>
           <DialogTitle>Add Trading Signal</DialogTitle>
           <DialogDescription>
-            Create a new trading signal with calculated quantity or amount
+            Create a new trading signal with symbol search and auto-calculation
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="symbol"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Symbol</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="e.g., BTCUSDT"
-                      {...field}
-                      data-testid="input-symbol"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="space-y-3 p-4 border rounded-lg bg-muted/50">
+              <h3 className="text-sm font-semibold">Symbol Search</h3>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-1.5 block">Category</Label>
+                  <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                    <SelectTrigger data-testid="select-category">
+                      <SelectValue placeholder="All Categories" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Categories</SelectItem>
+                      <SelectItem value="Nifty">Nifty</SelectItem>
+                      <SelectItem value="Nifty 500">Nifty 500</SelectItem>
+                      <SelectItem value="ETF">ETF</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-1.5 block">Filter By</Label>
+                  <Select value={filterType} onValueChange={setFilterType}>
+                    <SelectTrigger data-testid="select-filter">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="company">Company</SelectItem>
+                      <SelectItem value="sector">Sector</SelectItem>
+                      <SelectItem value="subsector">Sub Sector</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <FormField
+                control={form.control}
+                name="symbol"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Search Symbol or Company</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input
+                          placeholder="Type symbol or company name..."
+                          value={searchTerm}
+                          onChange={(e) => {
+                            setSearchTerm(e.target.value);
+                            field.onChange(e.target.value);
+                          }}
+                          onFocus={() => searchTerm && setShowSuggestions(true)}
+                          data-testid="input-symbol-search"
+                        />
+                        {showSuggestions && filteredSuggestions.length > 0 && (
+                          <div className="absolute z-50 w-full mt-1 border rounded-md bg-popover shadow-lg">
+                            <ScrollArea className="max-h-60">
+                              {filteredSuggestions.map((suggestion) => (
+                                <div
+                                  key={suggestion.symbol}
+                                  className="px-3 py-2 cursor-pointer hover-elevate active-elevate-2 border-b last:border-0"
+                                  onClick={() => handleSelectSymbol(suggestion)}
+                                  data-testid={`suggestion-${suggestion.symbol}`}
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <p className="font-medium font-mono text-sm">{suggestion.symbol}</p>
+                                      <p className="text-xs text-muted-foreground">{suggestion.company}</p>
+                                    </div>
+                                    <div className="text-right">
+                                      <Badge variant="outline" className="text-xs mb-1">
+                                        {suggestion.category}
+                                      </Badge>
+                                      <p className="text-xs text-muted-foreground">
+                                        {suggestion.sector} • {suggestion.subSector}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </ScrollArea>
+                          </div>
+                        )}
+                      </div>
+                    </FormControl>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Start typing to see filtered suggestions based on your category and filter selections
+                    </p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
             <FormField
               control={form.control}
               name="entryPrice"
