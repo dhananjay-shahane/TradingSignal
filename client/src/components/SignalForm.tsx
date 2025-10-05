@@ -32,6 +32,16 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
+export interface Signal {
+  id: string;
+  symbol: string;
+  entryPrice: number;
+  qty: number;
+  amount: number;
+  status: "active" | "closed" | "pending";
+  createdAt: string;
+}
+
 const signalFormSchema = z.object({
   symbol: z.string().min(1, "Symbol is required"),
   entryPrice: z.string().min(1, "Entry price is required"),
@@ -75,10 +85,16 @@ const mockSymbols: SymbolSuggestion[] = [
   { symbol: "BANKBEES", company: "Nippon India ETF Bank BeES", sector: "ETF", subSector: "Sector ETF", category: "ETF" },
 ];
 
-export function SignalForm({ open, onOpenChange, onSubmit }: SignalFormProps) {
+interface SignalFormWithEditProps extends SignalFormProps {
+  editSignal?: Signal | null;
+}
+
+export function SignalForm({ open, onOpenChange, onSubmit, editSignal }: SignalFormWithEditProps) {
   const [isAmountMode, setIsAmountMode] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set(["Nifty"]));
-  const [filterType, setFilterType] = useState<string>("company");
+  const [selectedCompany, setSelectedCompany] = useState<string>("all");
+  const [selectedSector, setSelectedSector] = useState<string>("all");
+  const [selectedSubSector, setSelectedSubSector] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredSuggestions, setFilteredSuggestions] = useState<SymbolSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -94,33 +110,58 @@ export function SignalForm({ open, onOpenChange, onSubmit }: SignalFormProps) {
   });
 
   useEffect(() => {
-    if (searchTerm.length === 0) {
-      setFilteredSuggestions([]);
-      setShowSuggestions(false);
-      return;
+    if (editSignal) {
+      form.reset({
+        symbol: editSignal.symbol,
+        entryPrice: editSignal.entryPrice.toString(),
+        qty: editSignal.qty.toString(),
+        amount: editSignal.amount.toString(),
+      });
+      setSearchTerm(editSignal.symbol);
+    } else {
+      form.reset({
+        symbol: "",
+        entryPrice: "",
+        qty: "",
+        amount: "",
+      });
+      setSearchTerm("");
     }
+  }, [editSignal, form]);
 
+  useEffect(() => {
     let filtered = mockSymbols;
 
     if (selectedCategories.size > 0) {
       filtered = filtered.filter(s => selectedCategories.has(s.category));
     }
 
-    const lowerSearch = searchTerm.toLowerCase();
-    filtered = filtered.filter(s => {
-      if (filterType === "company") {
-        return s.company.toLowerCase().includes(lowerSearch) || 
-               s.symbol.toLowerCase().includes(lowerSearch);
-      } else if (filterType === "sector") {
-        return s.sector.toLowerCase().includes(lowerSearch);
-      } else {
-        return s.subSector.toLowerCase().includes(lowerSearch);
-      }
-    });
+    if (selectedCompany !== "all") {
+      filtered = filtered.filter(s => s.company === selectedCompany);
+    }
+
+    if (selectedSector !== "all") {
+      filtered = filtered.filter(s => s.sector === selectedSector);
+    }
+
+    if (selectedSubSector !== "all") {
+      filtered = filtered.filter(s => s.subSector === selectedSubSector);
+    }
+
+    if (searchTerm.length > 0) {
+      const lowerSearch = searchTerm.toLowerCase();
+      filtered = filtered.filter(s => 
+        s.symbol.toLowerCase().includes(lowerSearch) || 
+        s.company.toLowerCase().includes(lowerSearch)
+      );
+    }
 
     setFilteredSuggestions(filtered.slice(0, 8));
-    setShowSuggestions(filtered.length > 0);
-  }, [searchTerm, selectedCategories, filterType]);
+  }, [searchTerm, selectedCategories, selectedCompany, selectedSector, selectedSubSector]);
+
+  const uniqueCompanies = Array.from(new Set(mockSymbols.map(s => s.company))).sort();
+  const uniqueSectors = Array.from(new Set(mockSymbols.map(s => s.sector))).sort();
+  const uniqueSubSectors = Array.from(new Set(mockSymbols.map(s => s.subSector))).sort();
 
   const calculateQty = (amount: string, entryPrice: string) => {
     const amountNum = parseFloat(amount);
@@ -178,11 +219,13 @@ export function SignalForm({ open, onOpenChange, onSubmit }: SignalFormProps) {
 
   const handleSubmit = (data: z.infer<typeof signalFormSchema>) => {
     console.log("Signal submitted:", data);
-    onSubmit(data);
+    onSubmit({ ...data, id: editSignal?.id });
     form.reset();
     setSearchTerm("");
     setSelectedCategories(new Set(["Nifty"]));
-    setFilterType("company");
+    setSelectedCompany("all");
+    setSelectedSector("all");
+    setSelectedSubSector("all");
     onOpenChange(false);
   };
 
@@ -190,9 +233,9 @@ export function SignalForm({ open, onOpenChange, onSubmit }: SignalFormProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto" data-testid="dialog-signal-form">
         <DialogHeader>
-          <DialogTitle>Add Trading Signal</DialogTitle>
+          <DialogTitle>{editSignal ? "Edit Trading Signal" : "Add Trading Signal"}</DialogTitle>
           <DialogDescription>
-            Create a new trading signal with symbol search and auto-calculation
+            {editSignal ? "Update the trading signal details" : "Create a new trading signal with symbol search and auto-calculation"}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -248,18 +291,49 @@ export function SignalForm({ open, onOpenChange, onSubmit }: SignalFormProps) {
                 </div>
               </div>
 
-              <div>
-                <Label className="text-xs text-muted-foreground mb-1.5 block">Filter By</Label>
-                <Select value={filterType} onValueChange={setFilterType}>
-                  <SelectTrigger data-testid="select-filter">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="company">Company</SelectItem>
-                    <SelectItem value="sector">Sector</SelectItem>
-                    <SelectItem value="subsector">Sub Sector</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-1.5 block">Company</Label>
+                  <Select value={selectedCompany} onValueChange={setSelectedCompany}>
+                    <SelectTrigger data-testid="select-company">
+                      <SelectValue placeholder="All" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Companies</SelectItem>
+                      {uniqueCompanies.map(company => (
+                        <SelectItem key={company} value={company}>{company}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-1.5 block">Sector</Label>
+                  <Select value={selectedSector} onValueChange={setSelectedSector}>
+                    <SelectTrigger data-testid="select-sector">
+                      <SelectValue placeholder="All" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Sectors</SelectItem>
+                      {uniqueSectors.map(sector => (
+                        <SelectItem key={sector} value={sector}>{sector}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-1.5 block">Sub Sector</Label>
+                  <Select value={selectedSubSector} onValueChange={setSelectedSubSector}>
+                    <SelectTrigger data-testid="select-subsector">
+                      <SelectValue placeholder="All" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Sub Sectors</SelectItem>
+                      {uniqueSubSectors.map(subSector => (
+                        <SelectItem key={subSector} value={subSector}>{subSector}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <FormField
@@ -276,8 +350,14 @@ export function SignalForm({ open, onOpenChange, onSubmit }: SignalFormProps) {
                           onChange={(e) => {
                             setSearchTerm(e.target.value);
                             field.onChange(e.target.value);
+                            setShowSuggestions(true);
                           }}
-                          onFocus={() => searchTerm && setShowSuggestions(true)}
+                          onFocus={() => {
+                            if (selectedCategories.size > 0 || searchTerm) {
+                              setShowSuggestions(true);
+                            }
+                          }}
+                          onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                           data-testid="input-symbol-search"
                         />
                         {showSuggestions && filteredSuggestions.length > 0 && (
@@ -423,7 +503,7 @@ export function SignalForm({ open, onOpenChange, onSubmit }: SignalFormProps) {
             </div>
 
             <Button type="submit" className="w-full" data-testid="button-submit-signal">
-              Add Signal
+              {editSignal ? "Update Signal" : "Add Signal"}
             </Button>
           </form>
         </Form>

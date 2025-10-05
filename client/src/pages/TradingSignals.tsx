@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { SignalForm } from "@/components/SignalForm";
-import { SignalsTable, Signal } from "@/components/SignalsTable";
+import { SignalForm, Signal } from "@/components/SignalForm";
+import { SignalsTable } from "@/components/SignalsTable";
 import { Plus } from "lucide-react";
 
 const initialSignals: Signal[] = [
@@ -55,8 +55,24 @@ const initialSignals: Signal[] = [
 export default function TradingSignals() {
   const [formOpen, setFormOpen] = useState(false);
   const [signals, setSignals] = useState(initialSignals);
+  const [editingSignal, setEditingSignal] = useState<Signal | null>(null);
 
   const handleAddSignal = (data: any) => {
+    if (data.id) {
+      setSignals(signals.map(s => 
+        s.id === data.id 
+          ? {
+              ...s,
+              symbol: data.symbol,
+              entryPrice: parseFloat(data.entryPrice),
+              qty: parseFloat(data.qty),
+              amount: parseFloat(data.amount),
+            }
+          : s
+      ));
+      setEditingSignal(null);
+      return;
+    }
     const newSignal: Signal = {
       id: String(signals.length + 1),
       symbol: data.symbol,
@@ -70,7 +86,15 @@ export default function TradingSignals() {
   };
 
   const handleEditSignal = (signal: Signal) => {
-    console.log("Edit signal:", signal);
+    setEditingSignal(signal);
+    setFormOpen(true);
+  };
+
+  const handleFormClose = (open: boolean) => {
+    setFormOpen(open);
+    if (!open) {
+      setEditingSignal(null);
+    }
   };
 
   const handleDeleteSignal = (id: string) => {
@@ -140,7 +164,12 @@ export default function TradingSignals() {
         onCloseSignal={handleCloseSignal}
       />
 
-      <SignalForm open={formOpen} onOpenChange={setFormOpen} onSubmit={handleAddSignal} />
+      <SignalForm 
+        open={formOpen} 
+        onOpenChange={handleFormClose} 
+        onSubmit={handleAddSignal}
+        editSignal={editingSignal}
+      />
     </div>
   );
 }

@@ -21,7 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Edit, Trash2, ArrowUpDown, Download, X } from "lucide-react";
 
-export interface Signal {
+interface Signal {
   id: string;
   symbol: string;
   entryPrice: number;
@@ -140,6 +140,7 @@ export function SignalsTable({ signals, onEdit, onDelete, onExportCSV, onToggleS
               <TableHead className="text-right">Quantity</TableHead>
               <TableHead className="text-right">Amount</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Active/Inactive</TableHead>
               <TableHead>Created</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -147,7 +148,7 @@ export function SignalsTable({ signals, onEdit, onDelete, onExportCSV, onToggleS
           <TableBody>
             {paginatedSignals.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground">
+                <TableCell colSpan={8} className="text-center text-muted-foreground">
                   No signals found
                 </TableCell>
               </TableRow>
@@ -163,25 +164,26 @@ export function SignalsTable({ signals, onEdit, onDelete, onExportCSV, onToggleS
                       {signal.status}
                     </Badge>
                   </TableCell>
+                  <TableCell>
+                    <Switch
+                      checked={signal.status === "active"}
+                      onCheckedChange={(checked) => onToggleStatus?.(signal.id, checked)}
+                      data-testid={`switch-status-${signal.id}`}
+                      disabled={signal.status === "closed"}
+                    />
+                  </TableCell>
                   <TableCell className="font-mono text-sm text-muted-foreground">
                     {new Date(signal.createdAt).toLocaleDateString()}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      <div className="flex items-center gap-2">
-                        <Switch
-                          checked={signal.status === "active"}
-                          onCheckedChange={(checked) => onToggleStatus?.(signal.id, checked)}
-                          data-testid={`switch-status-${signal.id}`}
-                          disabled={signal.status === "closed"}
-                        />
-                      </div>
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => onCloseSignal?.(signal.id)}
                         data-testid={`button-close-${signal.id}`}
                         disabled={signal.status === "closed"}
+                        title="Close signal"
                       >
                         <X className="h-4 w-4" />
                       </Button>
@@ -190,6 +192,7 @@ export function SignalsTable({ signals, onEdit, onDelete, onExportCSV, onToggleS
                         size="icon"
                         onClick={() => onEdit(signal)}
                         data-testid={`button-edit-${signal.id}`}
+                        title="Edit signal"
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -198,6 +201,7 @@ export function SignalsTable({ signals, onEdit, onDelete, onExportCSV, onToggleS
                         size="icon"
                         onClick={() => onDelete(signal.id)}
                         data-testid={`button-delete-${signal.id}`}
+                        title="Delete signal"
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
