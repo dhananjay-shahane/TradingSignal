@@ -21,6 +21,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -76,7 +77,7 @@ const mockSymbols: SymbolSuggestion[] = [
 
 export function SignalForm({ open, onOpenChange, onSubmit }: SignalFormProps) {
   const [isAmountMode, setIsAmountMode] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set(["Nifty"]));
   const [filterType, setFilterType] = useState<string>("company");
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredSuggestions, setFilteredSuggestions] = useState<SymbolSuggestion[]>([]);
@@ -101,8 +102,8 @@ export function SignalForm({ open, onOpenChange, onSubmit }: SignalFormProps) {
 
     let filtered = mockSymbols;
 
-    if (selectedCategory !== "all") {
-      filtered = filtered.filter(s => s.category === selectedCategory);
+    if (selectedCategories.size > 0) {
+      filtered = filtered.filter(s => selectedCategories.has(s.category));
     }
 
     const lowerSearch = searchTerm.toLowerCase();
@@ -119,7 +120,7 @@ export function SignalForm({ open, onOpenChange, onSubmit }: SignalFormProps) {
 
     setFilteredSuggestions(filtered.slice(0, 8));
     setShowSuggestions(filtered.length > 0);
-  }, [searchTerm, selectedCategory, filterType]);
+  }, [searchTerm, selectedCategories, filterType]);
 
   const calculateQty = (amount: string, entryPrice: string) => {
     const amountNum = parseFloat(amount);
@@ -163,12 +164,24 @@ export function SignalForm({ open, onOpenChange, onSubmit }: SignalFormProps) {
     setShowSuggestions(false);
   };
 
+  const handleCategoryToggle = (category: string) => {
+    setSelectedCategories(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(category)) {
+        newSet.delete(category);
+      } else {
+        newSet.add(category);
+      }
+      return newSet;
+    });
+  };
+
   const handleSubmit = (data: z.infer<typeof signalFormSchema>) => {
     console.log("Signal submitted:", data);
     onSubmit(data);
     form.reset();
     setSearchTerm("");
-    setSelectedCategory("all");
+    setSelectedCategories(new Set(["Nifty"]));
     setFilterType("company");
     onOpenChange(false);
   };
@@ -187,35 +200,66 @@ export function SignalForm({ open, onOpenChange, onSubmit }: SignalFormProps) {
             <div className="space-y-3 p-4 border rounded-lg bg-muted/50">
               <h3 className="text-sm font-semibold">Symbol Search</h3>
               
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-xs text-muted-foreground mb-1.5 block">Category</Label>
-                  <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                    <SelectTrigger data-testid="select-category">
-                      <SelectValue placeholder="All Categories" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Categories</SelectItem>
-                      <SelectItem value="Nifty">Nifty</SelectItem>
-                      <SelectItem value="Nifty 500">Nifty 500</SelectItem>
-                      <SelectItem value="ETF">ETF</SelectItem>
-                    </SelectContent>
-                  </Select>
+              <div>
+                <Label className="text-xs text-muted-foreground mb-2 block">Category</Label>
+                <div className="flex gap-4 flex-wrap">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="category-nifty"
+                      checked={selectedCategories.has("Nifty")}
+                      onCheckedChange={() => handleCategoryToggle("Nifty")}
+                      data-testid="checkbox-category-nifty"
+                    />
+                    <label
+                      htmlFor="category-nifty"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      Nifty
+                    </label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="category-nifty500"
+                      checked={selectedCategories.has("Nifty 500")}
+                      onCheckedChange={() => handleCategoryToggle("Nifty 500")}
+                      data-testid="checkbox-category-nifty500"
+                    />
+                    <label
+                      htmlFor="category-nifty500"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      Nifty 500
+                    </label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="category-etf"
+                      checked={selectedCategories.has("ETF")}
+                      onCheckedChange={() => handleCategoryToggle("ETF")}
+                      data-testid="checkbox-category-etf"
+                    />
+                    <label
+                      htmlFor="category-etf"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      ETF
+                    </label>
+                  </div>
                 </div>
+              </div>
 
-                <div>
-                  <Label className="text-xs text-muted-foreground mb-1.5 block">Filter By</Label>
-                  <Select value={filterType} onValueChange={setFilterType}>
-                    <SelectTrigger data-testid="select-filter">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="company">Company</SelectItem>
-                      <SelectItem value="sector">Sector</SelectItem>
-                      <SelectItem value="subsector">Sub Sector</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1.5 block">Filter By</Label>
+                <Select value={filterType} onValueChange={setFilterType}>
+                  <SelectTrigger data-testid="select-filter">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="company">Company</SelectItem>
+                    <SelectItem value="sector">Sector</SelectItem>
+                    <SelectItem value="subsector">Sub Sector</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <FormField

@@ -78,6 +78,20 @@ export default function TradingSignals() {
     console.log("Deleted signal:", id);
   };
 
+  const handleToggleStatus = (id: string, isActive: boolean) => {
+    setSignals(signals.map(s => 
+      s.id === id ? { ...s, status: isActive ? "active" : "pending" as const } : s
+    ));
+    console.log(`Signal ${id} status changed to ${isActive ? 'active' : 'pending'}`);
+  };
+
+  const handleCloseSignal = (id: string) => {
+    setSignals(signals.map(s => 
+      s.id === id ? { ...s, status: "closed" as const } : s
+    ));
+    console.log(`Signal ${id} closed`);
+  };
+
   const handleExportCSV = () => {
     console.log("Exporting signals to CSV...");
     const csvContent = [
@@ -122,6 +136,8 @@ export default function TradingSignals() {
         onEdit={handleEditSignal}
         onDelete={handleDeleteSignal}
         onExportCSV={handleExportCSV}
+        onToggleStatus={handleToggleStatus}
+        onCloseSignal={handleCloseSignal}
       />
 
       <SignalForm open={formOpen} onOpenChange={setFormOpen} onSubmit={handleAddSignal} />

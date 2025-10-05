@@ -7,10 +7,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Trash2, ArrowUpDown, Download } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Edit, Trash2, ArrowUpDown, Download, X } from "lucide-react";
 
 export interface Signal {
   id: string;
@@ -27,12 +36,21 @@ interface SignalsTableProps {
   onEdit: (signal: Signal) => void;
   onDelete: (id: string) => void;
   onExportCSV: () => void;
+  onToggleStatus?: (id: string, isActive: boolean) => void;
+  onCloseSignal?: (id: string) => void;
 }
 
-export function SignalsTable({ signals, onEdit, onDelete, onExportCSV }: SignalsTableProps) {
+export function SignalsTable({ signals, onEdit, onDelete, onExportCSV, onToggleStatus, onCloseSignal }: SignalsTableProps) {
   const [sortField, setSortField] = useState<keyof Signal>("createdAt");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [filterText, setFilterText] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+
+  const handleFilterChange = (value: string) => {
+    setFilterText(value);
+    setCurrentPage(1);
+  };
 
   const handleSort = (field: keyof Signal) => {
     if (sortField === field) {
@@ -54,6 +72,16 @@ export function SignalsTable({ signals, onEdit, onDelete, onExportCSV }: Signals
     return aValue > bValue ? modifier : -modifier;
   });
 
+  const totalPages = Math.ceil(sortedSignals.length / itemsPerPage);
+  const clampedPage = Math.min(currentPage, Math.max(1, totalPages));
+  const startIndex = (clampedPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedSignals = sortedSignals.slice(startIndex, endIndex);
+
+  if (currentPage !== clampedPage && totalPages > 0) {
+    setCurrentPage(clampedPage);
+  }
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "active":
@@ -73,7 +101,7 @@ export function SignalsTable({ signals, onEdit, onDelete, onExportCSV }: Signals
         <Input
           placeholder="Filter by symbol..."
           value={filterText}
-          onChange={(e) => setFilterText(e.target.value)}
+          onChange={(e) => handleFilterChange(e.target.value)}
           className="max-w-sm"
           data-testid="input-filter"
         />
@@ -117,14 +145,14 @@ export function SignalsTable({ signals, onEdit, onDelete, onExportCSV }: Signals
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sortedSignals.length === 0 ? (
+            {paginatedSignals.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center text-muted-foreground">
                   No signals found
                 </TableCell>
               </TableRow>
             ) : (
-              sortedSignals.map((signal) => (
+              paginatedSignals.map((signal) => (
                 <TableRow key={signal.id} data-testid={`row-signal-${signal.id}`}>
                   <TableCell className="font-medium font-mono">{signal.symbol}</TableCell>
                   <TableCell className="font-mono">${signal.entryPrice.toFixed(2)}</TableCell>
@@ -140,6 +168,23 @@ export function SignalsTable({ signals, onEdit, onDelete, onExportCSV }: Signals
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={signal.status === "active"}
+                          onCheckedChange={(checked) => onToggleStatus?.(signal.id, checked)}
+                          data-testid={`switch-status-${signal.id}`}
+                          disabled={signal.status === "closed"}
+                        />
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => onCloseSignal?.(signal.id)}
+                        data-testid={`button-close-${signal.id}`}
+                        disabled={signal.status === "closed"}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"
@@ -164,6 +209,39 @@ export function SignalsTable({ signals, onEdit, onDelete, onExportCSV }: Signals
           </TableBody>
         </Table>
       </div>
+
+      {totalPages > 1 && (
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious 
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                data-testid="pagination-prev"
+              />
+            </PaginationItem>
+            {[...Array(totalPages)].map((_, i) => (
+              <PaginationItem key={i + 1}>
+                <PaginationLink
+                  onClick={() => setCurrentPage(i + 1)}
+                  isActive={currentPage === i + 1}
+                  className="cursor-pointer"
+                  data-testid={`pagination-page-${i + 1}`}
+                >
+                  {i + 1}
+                </PaginationLink>
+              </PaginationItem>
+            ))}
+            <PaginationItem>
+              <PaginationNext
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                data-testid="pagination-next"
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      )}
     </div>
   );
 }

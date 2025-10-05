@@ -13,6 +13,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
@@ -484,6 +492,9 @@ function SymbolDataTable({
   getCmpBadge,
   handleSkipSymbol,
 }: any) {
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+
   const getCmpValue = (symbol: SymbolData) => {
     if (activeTab === "7d") return symbol.cmp7d;
     if (activeTab === "30d") return symbol.cmp30d;
@@ -501,6 +512,16 @@ function SymbolDataTable({
     if (activeTab === "30d") return symbol.lastUpdate30d;
     return symbol.lastUpdate5min;
   };
+
+  const totalPages = Math.ceil(symbols.length / itemsPerPage);
+  const clampedPage = Math.min(currentPage, Math.max(1, totalPages));
+  const startIndex = (clampedPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedSymbols = symbols.slice(startIndex, endIndex);
+
+  if (currentPage !== clampedPage && totalPages > 0) {
+    setCurrentPage(clampedPage);
+  }
 
   return (
     <Card>
@@ -520,7 +541,7 @@ function SymbolDataTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {symbols.map((symbol: SymbolData) => (
+              {paginatedSymbols.map((symbol: SymbolData) => (
                 <Collapsible
                   key={symbol.id}
                   open={expandedSymbol === symbol.id}
@@ -609,6 +630,39 @@ function SymbolDataTable({
             </TableBody>
           </Table>
         </div>
+
+        {totalPages > 1 && (
+          <Pagination className="mt-4">
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious 
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                  data-testid="pagination-prev"
+                />
+              </PaginationItem>
+              {[...Array(totalPages)].map((_, i) => (
+                <PaginationItem key={i + 1}>
+                  <PaginationLink
+                    onClick={() => setCurrentPage(i + 1)}
+                    isActive={currentPage === i + 1}
+                    className="cursor-pointer"
+                    data-testid={`pagination-page-${i + 1}`}
+                  >
+                    {i + 1}
+                  </PaginationLink>
+                </PaginationItem>
+              ))}
+              <PaginationItem>
+                <PaginationNext
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                  data-testid="pagination-next"
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        )}
       </CardContent>
     </Card>
   );

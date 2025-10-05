@@ -13,6 +13,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -97,6 +105,23 @@ export default function UserManagement() {
   const [sortField, setSortField] = useState<SortField>("registeredAt");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [visiblePasswords, setVisiblePasswords] = useState<Set<string>>(new Set());
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    setCurrentPage(1);
+  };
+
+  const handleRoleFilterChange = (value: string) => {
+    setRoleFilter(value);
+    setCurrentPage(1);
+  };
+
+  const handleStatusFilterChange = (value: string) => {
+    setStatusFilter(value);
+    setCurrentPage(1);
+  };
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -141,7 +166,17 @@ export default function UserManagement() {
     console.log(`Schedule time updated to ${time} for user ${userId}`);
   };
 
-  const filteredUsers = users
+  const handleToggleUserStatus = (userId: string, isActive: boolean) => {
+    setUsers(users.map(u => 
+      u.id === userId ? { ...u, status: isActive ? "active" : "inactive" } : u
+    ));
+    toast({
+      title: `User ${isActive ? 'activated' : 'deactivated'}`,
+      description: `User status has been updated successfully`,
+    });
+  };
+
+  const filteredAndSortedUsers = users
     .filter((user) => {
       const matchesSearch = 
         user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -156,6 +191,16 @@ export default function UserManagement() {
       const modifier = sortDirection === "asc" ? 1 : -1;
       return aValue > bValue ? modifier : -modifier;
     });
+
+  const totalPages = Math.ceil(filteredAndSortedUsers.length / itemsPerPage);
+  const clampedPage = Math.min(currentPage, Math.max(1, totalPages));
+  const startIndex = (clampedPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedUsers = filteredAndSortedUsers.slice(startIndex, endIndex);
+
+  if (currentPage !== clampedPage && totalPages > 0) {
+    setCurrentPage(clampedPage);
+  }
 
   const getRoleBadgeColor = (role: string) => {
     return role === "admin" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground";
@@ -182,12 +227,12 @@ export default function UserManagement() {
               <Input
                 placeholder="Search by ID or email..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 className="pl-9"
                 data-testid="input-search"
               />
             </div>
-            <Select value={roleFilter} onValueChange={setRoleFilter}>
+            <Select value={roleFilter} onValueChange={handleRoleFilterChange}>
               <SelectTrigger className="w-full md:w-40" data-testid="select-role-filter">
                 <SelectValue placeholder="Filter by role" />
               </SelectTrigger>
@@ -197,7 +242,7 @@ export default function UserManagement() {
                 <SelectItem value="user">User</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select value={statusFilter} onValueChange={handleStatusFilterChange}>
               <SelectTrigger className="w-full md:w-40" data-testid="select-status-filter">
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
@@ -260,6 +305,7 @@ export default function UserManagement() {
                   <ArrowUpDown className="ml-2 h-3 w-3" />
                 </Button>
               </TableHead>
+              <TableHead className="whitespace-nowrap">Active/Inactive</TableHead>
               <TableHead className="whitespace-nowrap">Email Notifications</TableHead>
               <TableHead className="whitespace-nowrap">Schedule Time</TableHead>
               <TableHead className="whitespace-nowrap">
@@ -277,14 +323,14 @@ export default function UserManagement() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredUsers.length === 0 ? (
+            {paginatedUsers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center text-muted-foreground">
+                <TableCell colSpan={10} className="text-center text-muted-foreground">
                   No users found
                 </TableCell>
               </TableRow>
             ) : (
-              filteredUsers.map((user) => (
+              paginatedUsers.map((user) => (
                 <TableRow key={user.id} data-testid={`row-user-${user.id}`}>
                   <TableCell className="font-medium font-mono text-sm">{user.id}</TableCell>
                   <TableCell className="font-medium">{user.email}</TableCell>
@@ -317,6 +363,13 @@ export default function UserManagement() {
                     <Badge className={getStatusBadgeColor(user.status)}>
                       {user.status}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Switch
+                      checked={user.status === "active"}
+                      onCheckedChange={(checked) => handleToggleUserStatus(user.id, checked)}
+                      data-testid={`switch-user-status-${user.id}`}
+                    />
                   </TableCell>
                   <TableCell>
                     <Switch
@@ -355,6 +408,39 @@ export default function UserManagement() {
           </TableBody>
         </Table>
       </div>
+
+      {totalPages > 1 && (
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious 
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                data-testid="pagination-prev"
+              />
+            </PaginationItem>
+            {[...Array(totalPages)].map((_, i) => (
+              <PaginationItem key={i + 1}>
+                <PaginationLink
+                  onClick={() => setCurrentPage(i + 1)}
+                  isActive={currentPage === i + 1}
+                  className="cursor-pointer"
+                  data-testid={`pagination-page-${i + 1}`}
+                >
+                  {i + 1}
+                </PaginationLink>
+              </PaginationItem>
+            ))}
+            <PaginationItem>
+              <PaginationNext
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                data-testid="pagination-next"
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      )}
     </div>
   );
 }
