@@ -84,6 +84,7 @@ export default function Login() {
                         <Input
                           type="email"
                           placeholder="admin@tradingsignals.com"
+                          autoComplete="email"
                           {...field}
                           data-testid="input-email"
                         />
@@ -102,6 +103,7 @@ export default function Login() {
                         <Input
                           type="password"
                           placeholder="••••••••"
+                          autoComplete="current-password"
                           {...field}
                           data-testid="input-password"
                         />
@@ -112,10 +114,8 @@ export default function Login() {
                 />
                 
                 <div className="flex justify-end">
-                  <Link href="/forgot-password">
-                    <a className="text-sm text-primary hover:underline" data-testid="link-forgot-password">
-                      Forgot password?
-                    </a>
+                  <Link href="/forgot-password" className="text-sm text-primary hover:underline" data-testid="link-forgot-password">
+                    Forgot password?
                   </Link>
                 </div>
 
@@ -130,10 +130,8 @@ export default function Login() {
 
                 <div className="text-center text-sm text-muted-foreground">
                   Need an admin account?{" "}
-                  <Link href="/register">
-                    <a className="text-primary hover:underline" data-testid="link-register">
-                      Register here
-                    </a>
+                  <Link href="/register" className="text-primary hover:underline" data-testid="link-register">
+                    Register here
                   </Link>
                 </div>
               </form>
