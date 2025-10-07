@@ -1,5 +1,6 @@
 import { type AuthUser, type InsertAuthUser, type TradeSignal, authUsers, adminTradeSignals } from "@shared/schema";
 import { db } from "./db";
+import { externalDb } from "./external-db";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 
@@ -46,7 +47,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getTradeSignals(): Promise<TradeSignal[]> {
-    const signals = await db.select().from(adminTradeSignals).orderBy(adminTradeSignals.createdAt);
+    const signals = await externalDb.select().from(adminTradeSignals);
     return signals;
   }
 }

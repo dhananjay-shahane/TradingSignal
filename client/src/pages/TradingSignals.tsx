@@ -16,15 +16,17 @@ export default function TradingSignals() {
   });
 
   // Transform database signals to match table format
-  const signals: Signal[] = dbSignals.map((s) => ({
-    id: String(s.id),
-    symbol: s.symbol,
-    entryPrice: parseFloat(s.ep),
-    qty: parseFloat(s.qty),
-    amount: parseFloat(s.ep) * parseFloat(s.qty),
-    status: "active" as const,
-    createdAt: s.createdAt ? new Date(s.createdAt).toISOString() : new Date().toISOString(),
-  }));
+  const signals: Signal[] = dbSignals
+    .filter((s) => s.symbol && s.ep && s.qty)
+    .map((s) => ({
+      id: String(s.id),
+      symbol: s.symbol!,
+      entryPrice: parseFloat(s.ep!),
+      qty: parseFloat(s.qty!),
+      amount: parseFloat(s.ep!) * parseFloat(s.qty!),
+      status: "active" as const,
+      createdAt: s.createdAt ? new Date(s.createdAt).toISOString() : new Date().toISOString(),
+    }));
 
   const handleAddSignal = (data: any) => {
     console.log("Add signal:", data);

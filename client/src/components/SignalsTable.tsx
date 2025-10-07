@@ -45,7 +45,7 @@ export function SignalsTable({ signals, onEdit, onDelete, onExportCSV, onToggleS
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [filterText, setFilterText] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
+  const itemsPerPage = 10;
 
   const handleFilterChange = (value: string) => {
     setFilterText(value);
@@ -156,9 +156,9 @@ export function SignalsTable({ signals, onEdit, onDelete, onExportCSV, onToggleS
               paginatedSignals.map((signal) => (
                 <TableRow key={signal.id} data-testid={`row-signal-${signal.id}`}>
                   <TableCell className="font-medium font-mono">{signal.symbol}</TableCell>
-                  <TableCell className="font-mono">${signal.entryPrice.toFixed(2)}</TableCell>
+                  <TableCell className="font-mono">₹{signal.entryPrice.toFixed(2)}</TableCell>
                   <TableCell className="text-right font-mono">{signal.qty.toFixed(4)}</TableCell>
-                  <TableCell className="text-right font-mono">${signal.amount.toFixed(2)}</TableCell>
+                  <TableCell className="text-right font-mono">₹{signal.amount.toFixed(2)}</TableCell>
                   <TableCell>
                     <Badge className={getStatusColor(signal.status)}>
                       {signal.status}

@@ -34,9 +34,9 @@ export type AuthUser = typeof authUsers.$inferSelect;
 // admin_trade_signals table in public schema
 export const adminTradeSignals = pgTable("admin_trade_signals", {
   id: serial("id").primaryKey(),
-  symbol: text("symbol").notNull(),
-  ep: numeric("ep", { precision: 20, scale: 8 }).notNull(),
-  qty: numeric("qty", { precision: 20, scale: 8 }).notNull(),
+  symbol: text("symbol"),
+  ep: numeric("ep", { precision: 10, scale: 2 }),
+  qty: numeric("qty"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
