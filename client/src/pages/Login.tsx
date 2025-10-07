@@ -1,8 +1,7 @@
-import { useState } from "react";
 import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,17 +15,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { TrendingUp } from "lucide-react";
 import { Link } from "wouter";
-
-const loginSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-});
+import { useToast } from "@/hooks/use-toast";
+import { loginSchema, type LoginData } from "@shared/schema";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function Login() {
   const [, setLocation] = useLocation();
-  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
-  const form = useForm<z.infer<typeof loginSchema>>({
+  const form = useForm<LoginData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       email: "",
@@ -34,13 +31,29 @@ export default function Login() {
     },
   });
 
-  const onSubmit = async (data: z.infer<typeof loginSchema>) => {
-    setIsLoading(true);
-    console.log("Login submitted:", data);
-    setTimeout(() => {
-      setIsLoading(false);
+  const loginMutation = useMutation({
+    mutationFn: async (data: LoginData) => {
+      const res = await apiRequest("POST", "/api/login", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Login successful! Redirecting...",
+      });
       setLocation("/dashboard");
-    }, 1000);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Login failed. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const onSubmit = async (data: LoginData) => {
+    loginMutation.mutate(data);
   };
 
   return (
@@ -109,10 +122,10 @@ export default function Login() {
                 <Button
                   type="submit"
                   className="w-full"
-                  disabled={isLoading}
+                  disabled={loginMutation.isPending}
                   data-testid="button-login"
                 >
-                  {isLoading ? "Logging in..." : "Login"}
+                  {loginMutation.isPending ? "Logging in..." : "Login"}
                 </Button>
 
                 <div className="text-center text-sm text-muted-foreground">

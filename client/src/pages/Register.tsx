@@ -1,8 +1,7 @@
-import { useState } from "react";
 import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,36 +15,58 @@ import {
 import { Input } from "@/components/ui/input";
 import { TrendingUp } from "lucide-react";
 import { Link } from "wouter";
+import { useToast } from "@/hooks/use-toast";
+import { insertAuthUserSchema, type InsertAuthUser } from "@shared/schema";
+import { apiRequest } from "@/lib/queryClient";
+import { z } from "zod";
 
-const registerSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-  confirmPassword: z.string().min(6, "Password must be at least 6 characters"),
+const registerFormSchema = insertAuthUserSchema.extend({
+  confirmPassword: z.string().min(1, "Please confirm your password"),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
 });
 
+type RegisterFormData = z.infer<typeof registerFormSchema>;
+
 export default function Register() {
   const [, setLocation] = useLocation();
-  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
-  const form = useForm<z.infer<typeof registerSchema>>({
-    resolver: zodResolver(registerSchema),
+  const form = useForm<RegisterFormData>({
+    resolver: zodResolver(registerFormSchema),
     defaultValues: {
+      username: "",
       email: "",
       password: "",
       confirmPassword: "",
     },
   });
 
-  const onSubmit = async (data: z.infer<typeof registerSchema>) => {
-    setIsLoading(true);
-    console.log("Registration submitted:", data);
-    setTimeout(() => {
-      setIsLoading(false);
+  const registerMutation = useMutation({
+    mutationFn: async (data: InsertAuthUser) => {
+      const res = await apiRequest("POST", "/api/register", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Registration successful! Please login.",
+      });
       setLocation("/");
-    }, 1000);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Registration failed. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const onSubmit = async (data: RegisterFormData) => {
+    const { confirmPassword, ...registerData } = data;
+    registerMutation.mutate(registerData);
   };
 
   return (
@@ -66,6 +87,23 @@ export default function Register() {
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="username"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Username</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="admin"
+                          {...field}
+                          data-testid="input-username"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <FormField
                   control={form.control}
                   name="email"
@@ -124,10 +162,10 @@ export default function Register() {
                 <Button
                   type="submit"
                   className="w-full"
-                  disabled={isLoading}
+                  disabled={registerMutation.isPending}
                   data-testid="button-register"
                 >
-                  {isLoading ? "Creating account..." : "Register"}
+                  {registerMutation.isPending ? "Creating account..." : "Register"}
                 </Button>
 
                 <div className="text-center text-sm text-muted-foreground">
