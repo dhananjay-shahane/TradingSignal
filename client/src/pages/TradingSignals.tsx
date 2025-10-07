@@ -1,88 +1,33 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { SignalForm, Signal } from "@/components/SignalForm";
 import { SignalsTable } from "@/components/SignalsTable";
 import { Plus } from "lucide-react";
-
-const initialSignals: Signal[] = [
-  {
-    id: "1",
-    symbol: "BTCUSDT",
-    entryPrice: 43250.50,
-    qty: 0.0231,
-    amount: 999.08,
-    status: "active",
-    createdAt: "2025-01-03T10:30:00Z",
-  },
-  {
-    id: "2",
-    symbol: "ETHUSDT",
-    entryPrice: 2245.75,
-    qty: 0.8895,
-    amount: 1997.56,
-    status: "closed",
-    createdAt: "2025-01-02T14:20:00Z",
-  },
-  {
-    id: "3",
-    symbol: "SOLUSDT",
-    entryPrice: 98.42,
-    qty: 10.1523,
-    amount: 999.18,
-    status: "pending",
-    createdAt: "2025-01-03T09:15:00Z",
-  },
-  {
-    id: "4",
-    symbol: "BNBUSDT",
-    entryPrice: 312.45,
-    qty: 3.1987,
-    amount: 999.45,
-    status: "active",
-    createdAt: "2025-01-03T08:45:00Z",
-  },
-  {
-    id: "5",
-    symbol: "ADAUSDT",
-    entryPrice: 0.4523,
-    qty: 2209.8145,
-    amount: 999.68,
-    status: "active",
-    createdAt: "2025-01-02T16:20:00Z",
-  },
-];
+import { Card, CardContent } from "@/components/ui/card";
+import type { TradeSignal } from "@shared/schema";
 
 export default function TradingSignals() {
   const [formOpen, setFormOpen] = useState(false);
-  const [signals, setSignals] = useState(initialSignals);
   const [editingSignal, setEditingSignal] = useState<Signal | null>(null);
 
+  const { data: dbSignals = [], isLoading } = useQuery<TradeSignal[]>({
+    queryKey: ["/api/trade-signals"],
+  });
+
+  // Transform database signals to match table format
+  const signals: Signal[] = dbSignals.map((s) => ({
+    id: String(s.id),
+    symbol: s.symbol,
+    entryPrice: parseFloat(s.ep),
+    qty: parseFloat(s.qty),
+    amount: parseFloat(s.ep) * parseFloat(s.qty),
+    status: "active" as const,
+    createdAt: s.createdAt ? new Date(s.createdAt).toISOString() : new Date().toISOString(),
+  }));
+
   const handleAddSignal = (data: any) => {
-    if (data.id) {
-      setSignals(signals.map(s => 
-        s.id === data.id 
-          ? {
-              ...s,
-              symbol: data.symbol,
-              entryPrice: parseFloat(data.entryPrice),
-              qty: parseFloat(data.qty),
-              amount: parseFloat(data.amount),
-            }
-          : s
-      ));
-      setEditingSignal(null);
-      return;
-    }
-    const newSignal: Signal = {
-      id: String(signals.length + 1),
-      symbol: data.symbol,
-      entryPrice: parseFloat(data.entryPrice),
-      qty: parseFloat(data.qty),
-      amount: parseFloat(data.amount),
-      status: "pending",
-      createdAt: new Date().toISOString(),
-    };
-    setSignals([newSignal, ...signals]);
+    console.log("Add signal:", data);
   };
 
   const handleEditSignal = (signal: Signal) => {
@@ -98,21 +43,14 @@ export default function TradingSignals() {
   };
 
   const handleDeleteSignal = (id: string) => {
-    setSignals(signals.filter((s) => s.id !== id));
     console.log("Deleted signal:", id);
   };
 
   const handleToggleStatus = (id: string, isActive: boolean) => {
-    setSignals(signals.map(s => 
-      s.id === id ? { ...s, status: isActive ? "active" : "pending" as const } : s
-    ));
     console.log(`Signal ${id} status changed to ${isActive ? 'active' : 'pending'}`);
   };
 
   const handleCloseSignal = (id: string) => {
-    setSignals(signals.map(s => 
-      s.id === id ? { ...s, status: "closed" as const } : s
-    ));
     console.log(`Signal ${id} closed`);
   };
 
@@ -139,6 +77,26 @@ export default function TradingSignals() {
     a.download = "trading-signals.csv";
     a.click();
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">Trading Signals</h1>
+            <p className="text-sm text-muted-foreground">
+              Manage your trading signals with smart quantity/amount calculations
+            </p>
+          </div>
+        </div>
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-center text-muted-foreground">Loading signals...</div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

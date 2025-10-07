@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgSchema, serial, text, timestamp } from "drizzle-orm/pg-core";
+import { pgSchema, pgTable, serial, text, timestamp, numeric } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -30,3 +30,20 @@ export const loginSchema = z.object({
 export type InsertAuthUser = z.infer<typeof insertAuthUserSchema>;
 export type LoginData = z.infer<typeof loginSchema>;
 export type AuthUser = typeof authUsers.$inferSelect;
+
+// admin_trade_signals table in public schema
+export const adminTradeSignals = pgTable("admin_trade_signals", {
+  id: serial("id").primaryKey(),
+  symbol: text("symbol").notNull(),
+  ep: numeric("ep", { precision: 20, scale: 8 }).notNull(),
+  qty: numeric("qty", { precision: 20, scale: 8 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertTradeSignalSchema = createInsertSchema(adminTradeSignals).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertTradeSignal = z.infer<typeof insertTradeSignalSchema>;
+export type TradeSignal = typeof adminTradeSignals.$inferSelect;

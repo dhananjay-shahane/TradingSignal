@@ -1,4 +1,4 @@
-import { type AuthUser, type InsertAuthUser, authUsers } from "@shared/schema";
+import { type AuthUser, type InsertAuthUser, type TradeSignal, authUsers, adminTradeSignals } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
@@ -9,6 +9,7 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<AuthUser | undefined>;
   createUser(user: InsertAuthUser): Promise<AuthUser>;
   verifyPassword(password: string, hash: string): Promise<boolean>;
+  getTradeSignals(): Promise<TradeSignal[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -42,6 +43,11 @@ export class DatabaseStorage implements IStorage {
 
   async verifyPassword(password: string, hash: string): Promise<boolean> {
     return bcrypt.compare(password, hash);
+  }
+
+  async getTradeSignals(): Promise<TradeSignal[]> {
+    const signals = await db.select().from(adminTradeSignals).orderBy(adminTradeSignals.createdAt);
+    return signals;
   }
 }
 

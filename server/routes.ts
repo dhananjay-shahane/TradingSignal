@@ -120,6 +120,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get trade signals endpoint
+  app.get("/api/trade-signals", async (req, res) => {
+    try {
+      const signals = await storage.getTradeSignals();
+      res.json(signals);
+    } catch (error: any) {
+      console.error("Failed to get trade signals:", error);
+      res.status(500).json({ message: "Failed to get trade signals" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
